@@ -36,13 +36,15 @@ class MailTemplateController extends AbstractController
 
         $files = array();
         foreach ($finder->in($mailDir) as $file) {
-            $files[$file->getFilename()] = '[front]'.$file->getFilename();
+            $fileName = '[front]'.$file->getFilename();
+            $files[$fileName] = $fileName;
         }
 
         $mailDir = $app['config']['template_realdir'].'/Mail';
         if (file_exists($mailDir)) {
             foreach ($finder->in($mailDir) as $file) {
-                $files[$file->getFilename()] = '[front] '.$file->getFilename();
+                $fileName = '[front]'.$file->getFilename();
+                $files[$fileName] = $fileName;
             }
         }
 
@@ -50,14 +52,16 @@ class MailTemplateController extends AbstractController
         $mailDir = $app['config']['template_admin_realdir'].'/Mail';
         if (file_exists($mailDir)) {
             foreach ($finder->in($mailDir) as $file) {
-                $files[$file->getFilename()] = '[admin]'.$file->getFilename();
+                $fileName = '[admin]'.$file->getFilename();
+                $files[$fileName] = $fileName;
             }
         }
 
         $mailDir = $app['config']['template_realdir'].'/../admin/Mail';
         if (file_exists($mailDir)) {
             foreach ($finder->in($mailDir) as $file) {
-                $files[$file->getFilename()] = '[admin]'.$file->getFilename();
+                $fileName = '[admin]'.$file->getFilename();
+                $files[$fileName] = $fileName;
             }
         }
 
