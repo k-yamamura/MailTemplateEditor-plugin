@@ -24,7 +24,7 @@ class MailTemplateController extends AbstractController
      * メールファイル管理一覧画面.
      *
      * @param Application $app
-     * @param Request     $request
+     * @param Request $request
      *
      * @return \Symfony\Component\HttpFoundation\Response
      */
@@ -36,15 +36,32 @@ class MailTemplateController extends AbstractController
 
         $files = array();
         foreach ($finder->in($mailDir) as $file) {
-            $files[$file->getFilename()] = $file->getFilename();
+            $files[$file->getFilename()] = '[front]'.$file->getFilename();
         }
 
         $mailDir = $app['config']['template_realdir'].'/Mail';
         if (file_exists($mailDir)) {
             foreach ($finder->in($mailDir) as $file) {
-                $files[$file->getFilename()] = $file->getFilename();
+                $files[$file->getFilename()] = '[front] '.$file->getFilename();
             }
         }
+
+        $finder = Finder::create()->depth(0);
+        $mailDir = $app['config']['template_admin_realdir'].'/Mail';
+        if (file_exists($mailDir)) {
+            foreach ($finder->in($mailDir) as $file) {
+                $files[$file->getFilename()] = '[admin]'.$file->getFilename();
+            }
+        }
+
+        $mailDir = $app['config']['template_realdir'].'/../admin/Mail';
+        if (file_exists($mailDir)) {
+            foreach ($finder->in($mailDir) as $file) {
+                $files[$file->getFilename()] = '[admin]'.$file->getFilename();
+            }
+        }
+
+        asort($files);
 
         return $app->render('MailTemplateEditor/Resource/template/admin/mail.twig', array(
             'files' => $files,
@@ -55,22 +72,34 @@ class MailTemplateController extends AbstractController
      * メール編集画面.
      *
      * @param Application $app
-     * @param Request     $request
+     * @param Request $request
      * @param $name
      *
      * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Symfony\Component\HttpFoundation\Response
      */
     public function edit(Application $app, Request $request, $name)
     {
-        $readPaths = array(
-            $app['config']['template_realdir'],
-            $app['config']['template_default_realdir'],
-        );
+
+        if (strpos($name, '[front]') !== false) {
+            $readPaths = array(
+                $app['config']['template_realdir'],
+                $app['config']['template_default_realdir'],
+            );
+            $targetName = str_replace('[front]', '', $name);
+            $targetDir = $app['config']['template_realdir'];
+        } elseif (strpos($name, '[admin]') !== false) {
+            $readPaths = array(
+                $app['config']['template_realdir'].'/../admin',
+                $app['config']['template_admin_realdir'],
+            );
+            $targetName = str_replace('[admin]', '', $name);
+            $targetDir = $app['config']['template_realdir'].'/../admin';
+        }
 
         $fs = new Filesystem();
         $tplData = null;
         foreach ($readPaths as $readPath) {
-            $filePath = $readPath.'/Mail/'.$name;
+            $filePath = $readPath.'/Mail/'.$targetName;
             if ($fs->exists($filePath)) {
                 $tplData = file_get_contents($filePath);
                 break;
@@ -94,7 +123,7 @@ class MailTemplateController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
 
             // ファイル生成・更新
-            $filePath = $app['config']['template_realdir'].'/Mail/'.$name;
+            $filePath = $targetDir.'/Mail/'.$targetName;
 
             $fs = new Filesystem();
             $pageData = $form->get('tpl_data')->getData();
@@ -121,7 +150,7 @@ class MailTemplateController extends AbstractController
      * メールファイル初期化処理.
      *
      * @param Application $app
-     * @param Request     $request
+     * @param Request $request
      * @param $name
      *
      * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Symfony\Component\HttpFoundation\Response
@@ -130,14 +159,24 @@ class MailTemplateController extends AbstractController
     {
         $this->isTokenValid($app);
 
-        $readPaths = array(
-            $app['config']['template_default_realdir'],
-        );
+        if (strpos($name, '[front]') !== false) {
+            $readPaths = array(
+                $app['config']['template_default_realdir'],
+            );
+            $targetName = str_replace('[front]', '', $name);
+            $targetDir = $app['config']['template_realdir'];
+        } elseif (strpos($name, '[admin]') !== false) {
+            $readPaths = array(
+                $app['config']['template_admin_realdir'],
+            );
+            $targetName = str_replace('[admin]', '', $name);
+            $targetDir = $app['config']['template_realdir'].'/../admin';
+        }
 
         $fs = new Filesystem();
         $tplData = null;
         foreach ($readPaths as $readPath) {
-            $filePath = $readPath.'/Mail/'.$name;
+            $filePath = $readPath.'/Mail/'.$targetName;
             if ($fs->exists($filePath)) {
                 $tplData = file_get_contents($filePath);
                 break;
@@ -157,7 +196,7 @@ class MailTemplateController extends AbstractController
         $form->get('tpl_data')->setData($tplData);
 
         // ファイル生成・更新
-        $filePath = $app['config']['template_realdir'].'/Mail/'.$name;
+        $filePath = $targetDir.'/Mail/'.$targetName;
 
         $fs = new Filesystem();
         $fs->dumpFile($filePath, $tplData);

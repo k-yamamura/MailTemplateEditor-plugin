@@ -46,7 +46,19 @@ class MailTemplateEditorServiceProvider implements ServiceProviderInterface
 
         // 管理画面メニュー追加
         $app['config'] = $app->share($app->extend('config', function ($config) {
-            $config['nav'][3]['child'][] = array(
+
+            $navs = $config['nav'];
+            $targetId = 3;
+            $i = 0;
+            foreach ($navs as $nav) {
+                if ($nav['id'] === 'content') {
+                    $targetId = $i;
+                    break;
+                }
+                $i++;
+            }
+
+            $config['nav'][$targetId]['child'][] = array(
                 'id' => 'mail',
                 'name' => 'メール管理',
                 'url' => 'plugin_MailTemplateEditor_mail',
